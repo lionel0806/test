@@ -24,6 +24,8 @@ int main(int argc, char **argv){
 
 
 	FREE(buf);
+	FREE(buf);
+	FREE(buf);	
 
 	return 0;
 }

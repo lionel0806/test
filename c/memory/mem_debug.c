@@ -112,8 +112,21 @@ void Free(void *ptr, char *func_name, int line) {
 	}
 
 	_del_node(ptr);
-//	free(ptr);
 
 	printf("%s:%d free memory OK!\n", func_name, line);
 	free(ptr);
+}
+
+
+void print_alloc_log(void){
+	struct node *p;
+	
+	int i, nsize;
+
+	nsize  = sizeof(htable)/sizeof(htable[0]);
+	for(i = 0;i < nsize; i++){
+		for(p = htable[i]; p; p = p->link){
+			print("[%s:%d], size:%d\n",p->func_name, p->line, p->size);
+		}
+	}
 }
