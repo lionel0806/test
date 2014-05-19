@@ -24,6 +24,7 @@ int main(int argc, char **argv){
 	printf("str len:%d\n",len);
 
 	p = atom_int(n);
+	printf("[%s:%d] >>> \n",__FUNCTION__,__LINE__);
 	len = atom_length(p);
 	printf("int len:%d\n",len);
 	printf("int:%s\n",p);

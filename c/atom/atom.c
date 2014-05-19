@@ -140,7 +140,8 @@ atom_int(long n){
 	if(n < 0)
 		*--p = '-';
 
-	return atom_new(p, str + sizeof(str) - p);
+	printf("[%s:%d] >>>%c\n",__FUNCTION__,__LINE__, *(p+1));
+	return atom_new(p + 1, str + sizeof(str) - p -1);
 }
 
 
