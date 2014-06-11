@@ -14,6 +14,7 @@
 #define FUNC_NAME_LEN_MAX 256
 #define HASH(p, t) (((unsigned long)(p) >> 3) & (sizeof(t)/sizeof((t)[0]) - 1))
 
+#define PRINT_ERR(fmt...)     do{printf("\033[41m");printf(fmt);printf("\033[0m");}while(0)
 
 
 static struct node{
@@ -29,9 +30,8 @@ static void _add_node(struct node *node) {
 
 	struct node **np = &htable[HASH(node->ptr, htable)];
 
-	printf("[%s:%d] >>> add %p\n",__FUNCTION__,__LINE__,node);
 	if (node) {
-		//insert first node of hash link.
+		/*insert first node of hash link*/
 		node->link = *np;
 		*np = node;
 	}
@@ -40,18 +40,15 @@ static void _add_node(struct node *node) {
 
 static void _del_node(const void *ptr) {
 
-	struct node *prev/*, *tmp*/;
+	struct node *prev;
 	struct node *np = htable[HASH(ptr, htable)];
 
-	printf("[%s:%d] >>> \n",__FUNCTION__,__LINE__);
 	if (np && np->ptr == ptr) {
 		htable[HASH(ptr, htable)] = np->link;
-		printf("[%s:%d] >>>>>>>>> %s %d %d --- %p\n",__FUNCTION__,__LINE__,np->func_name, np->line, np->size, np);
 		free(np);
 		return;
 	}
 
-	printf("[%s:%d] >>> \n",__FUNCTION__,__LINE__);
 	prev = np;
 	while (np) {
 		if (np->ptr == ptr) {
@@ -85,11 +82,11 @@ void *Malloc(size_t size, char *func_name, int line) {
 
 	ptr = malloc(size);
 	if (!ptr) {
-		printf("%s:%d no enough memory !\n", func_name, line);
+		PRINT_ERR("%s:%d no enough memory !\n", func_name, line);
 		return NULL;
 	}
 
-	if ((np = malloc(sizeof(&np)))) {
+	if ((np = malloc(sizeof(*np)))) {
 		np->ptr = ptr;
 		np->size = size;
 		np->line = line;
@@ -98,7 +95,6 @@ void *Malloc(size_t size, char *func_name, int line) {
 		_add_node(np);
 	}
 
-	printf("%s:%d alloc memory OK!\n", func_name, line);
 	return ptr;
 }
 
@@ -106,14 +102,14 @@ void Free(void *ptr, char *func_name, int line) {
 	assert(ptr);
 
 	if (_find_node(ptr) == NULL) {
-		printf("[%s:%d] You free this memory more than one time !\n", func_name,
+		PRINT_ERR("[%s:%d] You free this memory more than one time !\n", func_name,
 				line);
 		return;
 	}
 
 	_del_node(ptr);
 
-	printf("%s:%d free memory OK!\n", func_name, line);
+	printf("%s:%d free memory OK! \n", func_name, line);
 	free(ptr);
 }
 
@@ -126,7 +122,7 @@ void print_alloc_log(void){
 	nsize  = sizeof(htable)/sizeof(htable[0]);
 	for(i = 0;i < nsize; i++){
 		for(p = htable[i]; p; p = p->link){
-			print("[%s:%d], size:%d\n",p->func_name, p->line, p->size);
+			printf("[%s:%d], size:%ld\n",p->func_name, p->line, p->size);
 		}
 	}
 }
