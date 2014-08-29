@@ -22,17 +22,17 @@
 
 
 static int
-initserver(int type, const struct sockaddr *addr, socklen_t alen, int qlen)
+initserver(int type, const struct sockaddr_in *addr, socklen_t alen, int qlen)
 {
 	int fd;
 	int err = 0;
 
-	if((fd = socket(addr->sa_family, type, 0)) < 0)
+	if((fd = socket(AF_INET, type, 0)) < 0)
 	{
 		return -1;
 	}
 
-	if(bind(fd, addr, alen) < 0)
+	if(bind(fd, (struct sockaddr *)addr, alen) < 0)
 	{
 		err = errno;
 		goto errout;
@@ -63,15 +63,21 @@ server(int sockfd)
 	FILE *fp;
 //	pid_t pid;
 	char buf[BUF_LEN];
+	struct sockaddr_in cli_addr;
+	int len;
+	char addr_buf[128];
 
 	for(;;)
 	{
-		clfd = accept(sockfd, NULL, NULL);
+		clfd = accept(sockfd, (struct sockaddr *)&cli_addr, &len);
 		if(clfd < 0)
 		{
 			syslog(LOG_ERR, "ruptimed: accept error: %s", strerror(errno));
 			exit(1);
 		}
+
+		printf("connected client addr: %s, port:%d\n",
+			 inet_ntop(AF_INET, (void *)&cli_addr.sin_addr, addr_buf, len), ntohs(cli_addr.sin_port));
 
 		if((fp = popen("/usr/bin/uptime", "r")) == NULL)
 		{
@@ -173,8 +179,9 @@ daemonize(const char * cmd)
 int
 main(int argc, char *argv[])
 {
-	struct addrinfo *ailist, *aip;
-	struct addrinfo hint;
+//	struct addrinfo *ailist, *aip;
+//	struct addrinfo hint;
+	struct sockaddr_in serv_addr;
 	int sockfd, err, n;
 	char *host;
 
@@ -203,36 +210,49 @@ main(int argc, char *argv[])
 	}
 
 	printf("host:%s\n",host);
-	daemonize("ruptimed");
+	//daemonize("ruptimed");
 
-	hint.ai_flags = AI_CANONNAME;
-	hint.ai_family = 0;
-	hint.ai_socktype = SOCK_STREAM;
-	hint.ai_protocol = 0;
-	hint.ai_addrlen = 0;
-	hint.ai_canonname = NULL;
-	hint.ai_addr = NULL;
-	hint.ai_next = NULL;
+//	hint.ai_flags = AI_CANONNAME;
+//	hint.ai_family = AF_INET;
+//	hint.ai_socktype = SOCK_STREAM;
+//	hint.ai_protocol = 0;
+//	hint.ai_addrlen = 0;
+//	hint.ai_canonname = NULL;
+//	hint.ai_addr = NULL;
+//	hint.ai_next = NULL;
 
-	if((err = getaddrinfo(host, "ruptime", &hint, &ailist)) != 0)
+//	if((err = getaddrinfo(host, "ruptime", &hint, &ailist)) != 0)
+//	{
+//		syslog(LOG_ERR, "ruptimed: getaddrinfo error: %s", gai_strerror(errno));
+//		exit(1);
+//	}
+
+//	printf()
+
+	memset(&serv_addr, 0, sizeof(serv_addr));
+	serv_addr.sin_family = AF_INET;
+	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	serv_addr.sin_port = htons(1234);
+
+	if ((sockfd = initserver(SOCK_STREAM, &serv_addr, sizeof(serv_addr), QLEN)) >= 0)
 	{
-		syslog(LOG_ERR, "ruptimed: getaddrinfo error: %s", gai_strerror(errno));
-		exit(1);
+		server(sockfd);
+		exit(0);
 	}
 
-	for(aip = ailist; aip; aip = aip->ai_next)
-	{
-		if((sockfd = initserver(SOCK_STREAM, aip->ai_addr, aip->ai_addrlen, QLEN)) >= 0)
-		{
-			server(sockfd);
-			exit(0);
-		}
-		else
-		{
-			printf("initserver error\n");
-			exit(1);
-		}
-	}
+//	for(aip = ailist; aip; aip = aip->ai_next)
+//	{
+//		if((sockfd = initserver(SOCK_STREAM, aip->ai_addr, aip->ai_addrlen, QLEN)) >= 0)
+//		{
+//			server(sockfd);
+//			exit(0);
+//		}
+//		else
+//		{
+//			printf("initserver error\n");
+//			exit(1);
+//		}
+//	}
 
 	exit(1);
 }
